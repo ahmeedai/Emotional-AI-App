@@ -1,52 +1,60 @@
 import streamlit as st
 import requests
 
-# Streamlit UI setup
+# Set up Streamlit page
 st.set_page_config(page_title="Emotional AI", layout="centered")
 st.title("🧠 Emotional AI")
-st.write("Tell me how you're feeling. I'm here to support you ❤️")
+st.markdown("Tell me how you're feeling. I'm here to support you ❤️")
 
-# Load Gemini API key
-API_KEY = st.secrets["GEMINI_API_KEY"]
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
+# Load your Gemini API key from secrets
+api_key = st.secrets["GEMINI_API_KEY"]
+url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
-# Initialize chat memory
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# Store messages
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [
+        {"role": "system", "content": "You are an emotional AI. You listen to users and give kind, supportive, and helpful responses based on their feelings."}
+    ]
 
-# Show chat history
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+# Show previous messages
+for msg in st.session_state.chat_history:
+    if msg["role"] != "system":
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-# Get user input
+# User input box
 user_input = st.chat_input("How are you feeling today?")
 if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
+    # Show user message
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Prepare payload
+    # Prepare data for Gemini
     data = {
         "contents": [
             {
-                "role": "user",
-                "parts": [{"text": f"You are a caring emotional AI. Respond supportively to this:\n\n{user_input}"}]
-            }
+                "role": msg["role"],
+                "parts": [{"text": msg["content"]}]
+            } for msg in st.session_state.chat_history
         ]
     }
 
-    # Request to Gemini API
+    # Send request to Gemini API
     try:
-        res = requests.post(API_URL, headers={"Content-Type": "application/json"}, json=data)
-        if res.status_code == 200:
-            reply = res.json()["candidates"][0]["content"]["parts"][0]["text"]
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=data
+        )
+        if response.status_code == 200:
+            reply = response.json()["candidates"][0]["content"]["parts"][0]["text"]
         else:
-            reply = f"Error: {res.status_code} - {res.text}"
+            reply = f"⚠️ Error {response.status_code}: {response.text}"
     except Exception as e:
-        reply = f"Error: {e}"
+        reply = f"❌ Unexpected error: {e}"
 
-    # Show assistant reply
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+    # Show AI response
+    st.session_state.chat_history.append({"role": "assistant", "content": reply})
     with st.chat_message("assistant"):
         st.markdown(reply)
