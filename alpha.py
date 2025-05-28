@@ -8,7 +8,8 @@ st.write("Tell me how you're feeling. I'm here to support you ❤️")
 
 # Your Gemini API key (stored securely in Streamlit secrets)
 API_KEY = st.secrets["GEMINI_API_KEY"]
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent?key={API_KEY}"
+# Fixed: Use correct model name
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={API_KEY}"
 
 # Initialize message history
 if "messages" not in st.session_state:
@@ -21,19 +22,33 @@ for msg in st.session_state.messages:
 
 # Get user input
 user_input = st.chat_input("How are you feeling today?")
+
 if user_input:
     # Show user message
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
+    
+    # Create request for Gemini - Fixed format
+    # Combine system instruction with user input
+    enhanced_prompt = f"""You are a caring emotional AI assistant. Respond with empathy, understanding, and support. 
+    
+User's message: {user_input}
 
-    # Create request for Gemini
-    prompt = [
-        {"role": "system", "parts": [{"text": "You are a caring emotional AI. Respond with empathy and support."}]},
-        {"role": "user", "parts": [{"text": user_input}]}
-    ]
-    data = {"contents": prompt}
-
+Please provide a thoughtful, empathetic response that validates their feelings and offers support."""
+    
+    data = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": enhanced_prompt
+                    }
+                ]
+            }
+        ]
+    }
+    
     try:
         res = requests.post(API_URL, headers={"Content-Type": "application/json"}, json=data)
         if res.status_code == 200:
@@ -42,7 +57,7 @@ if user_input:
             reply = f"Error: {res.status_code} - {res.text}"
     except Exception as e:
         reply = f"Error: {e}"
-
+    
     # Show assistant response
     st.session_state.messages.append({"role": "assistant", "content": reply})
     with st.chat_message("assistant"):
