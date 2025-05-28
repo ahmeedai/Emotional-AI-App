@@ -1,43 +1,48 @@
 import streamlit as st
 import requests
 
-# Set up page
+# Set up Streamlit page
 st.set_page_config(page_title="Emotional AI", layout="centered")
 st.title("🧠 Emotional AI")
 st.markdown("Tell me how you're feeling. I'm here to support you ❤️")
 
-# Load Gemini API key
+# Load your Gemini API key from secrets
 api_key = st.secrets["GEMINI_API_KEY"]
 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
-# Initialize chat history (no 'system' role)
+# Store messages
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+    st.session_state.chat_history = [
+        {"role": "system", "content": "You are an emotional AI. You listen to users and give kind, supportive, and helpful responses based on their feelings."}
+    ]
 
 # Show previous messages
 for msg in st.session_state.chat_history:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    if msg["role"] != "system":
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-# Input from user
+# User input box
 user_input = st.chat_input("How are you feeling today?")
 if user_input:
-    # Add user message
+    # Show user message
     st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Create prompt from chat history
+    # Prepare data for Gemini
     data = {
         "contents": [
             {
                 "role": msg["role"],
                 "parts": [{"text": msg["content"]}]
-            } for msg in st.session_state.chat_history
+            }
+            for msg in st.session_state.chat_history
+            if msg["role"] in {"user", "assistant"}
         ]
     }
 
-    # Call Gemini API
+    # Send request to Gemini API
     try:
         response = requests.post(
             url,
@@ -51,7 +56,7 @@ if user_input:
     except Exception as e:
         reply = f"❌ Unexpected error: {e}"
 
-    # Show assistant reply
+    # Show AI response
     st.session_state.chat_history.append({"role": "assistant", "content": reply})
     with st.chat_message("assistant"):
         st.markdown(reply)
