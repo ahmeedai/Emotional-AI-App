@@ -1,36 +1,33 @@
 import streamlit as st
 import requests
 
-# Set up Streamlit page
+# Set up page
 st.set_page_config(page_title="Emotional AI", layout="centered")
 st.title("🧠 Emotional AI")
 st.markdown("Tell me how you're feeling. I'm here to support you ❤️")
 
-# Load your Gemini API key from secrets
+# Load Gemini API key
 api_key = st.secrets["GEMINI_API_KEY"]
 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
-# Store messages
+# Initialize chat history (no 'system' role)
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [
-        {"role": "system", "content": "You are an emotional AI. You listen to users and give kind, supportive, and helpful responses based on their feelings."}
-    ]
+    st.session_state.chat_history = []
 
 # Show previous messages
 for msg in st.session_state.chat_history:
-    if msg["role"] != "system":
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-# User input box
+# Input from user
 user_input = st.chat_input("How are you feeling today?")
 if user_input:
-    # Show user message
+    # Add user message
     st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Prepare data for Gemini
+    # Create prompt from chat history
     data = {
         "contents": [
             {
@@ -40,7 +37,7 @@ if user_input:
         ]
     }
 
-    # Send request to Gemini API
+    # Call Gemini API
     try:
         response = requests.post(
             url,
@@ -54,7 +51,7 @@ if user_input:
     except Exception as e:
         reply = f"❌ Unexpected error: {e}"
 
-    # Show AI response
+    # Show assistant reply
     st.session_state.chat_history.append({"role": "assistant", "content": reply})
     with st.chat_message("assistant"):
         st.markdown(reply)
