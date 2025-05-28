@@ -9,7 +9,7 @@ st.write("Tell me how you're feeling. I'm here to support you ❤️")
 # Your Gemini API key (stored securely in Streamlit secrets)
 API_KEY = st.secrets["GEMINI_API_KEY"]
 # Fixed: Use correct model name
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={API_KEY}"
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
 # Initialize message history
 if "messages" not in st.session_state:
