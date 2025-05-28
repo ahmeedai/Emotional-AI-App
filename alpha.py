@@ -1,20 +1,20 @@
 import streamlit as st
 import requests
 
-# Set up the page
+# Streamlit UI setup
 st.set_page_config(page_title="Emotional AI", layout="centered")
 st.title("🧠 Emotional AI")
 st.write("Tell me how you're feeling. I'm here to support you ❤️")
 
-# Your Gemini API key (stored securely in Streamlit secrets)
+# Load Gemini API key
 API_KEY = st.secrets["GEMINI_API_KEY"]
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent?key={API_KEY}"
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
 
-# Initialize message history
+# Initialize chat memory
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Show past messages
+# Show chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -22,18 +22,21 @@ for msg in st.session_state.messages:
 # Get user input
 user_input = st.chat_input("How are you feeling today?")
 if user_input:
-    # Show user message
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Create request for Gemini
-    prompt = [
-        {"role": "system", "parts": [{"text": "You are a caring emotional AI. Respond with empathy and support."}]},
-        {"role": "user", "parts": [{"text": user_input}]}
-    ]
-    data = {"contents": prompt}
+    # Prepare payload
+    data = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": f"You are a caring emotional AI. Respond supportively to this:\n\n{user_input}"}]
+            }
+        ]
+    }
 
+    # Request to Gemini API
     try:
         res = requests.post(API_URL, headers={"Content-Type": "application/json"}, json=data)
         if res.status_code == 200:
@@ -43,7 +46,7 @@ if user_input:
     except Exception as e:
         reply = f"Error: {e}"
 
-    # Show assistant response
+    # Show assistant reply
     st.session_state.messages.append({"role": "assistant", "content": reply})
     with st.chat_message("assistant"):
         st.markdown(reply)
